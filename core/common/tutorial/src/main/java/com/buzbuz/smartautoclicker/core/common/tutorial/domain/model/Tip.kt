@@ -17,9 +17,11 @@
 package com.buzbuz.smartautoclicker.core.common.tutorial.domain.model
 
 enum class Tip {
+    ACTIONS_BRIEF,
     IMAGE_CAPTURE,
     IMAGE_DETECTION_AREA,
     NUMBER_DETECTION_AREA,
+    SCREEN_CONDITION_BRIEF,
     TEXT_DETECTION_AREA,
     STOP_WITH_VOLUME_DOWN,
 }

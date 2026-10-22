@@ -158,13 +158,11 @@
         \n\n2つのアクションの間に待機を入れることも有効ですが、リストの末尾に追加することの方が重要なケースが
         多いです。</string>
 
-    <!-- Swipe Action slideshow -->
-    <string name="tutorial_slideshow_swipe_action_title">スワイプアクション</string>
-    <string name="tutorial_slideshow_swipe_action_desc">スワイプジェスチャーの実行方法を学ぶ</string>
-    <string name="tutorial_slideshow_swipe_action_step_1_text">スワイプアクションは開始位置から終了位置まで直線的な
-        ドラッグジェスチャーを実行します。両方の座標は固定されており、アクションの設定で指定します。\n\nデュレーション
-        はジェスチャーが開始から終了まで要する時間を制御します。短いデュレーションはより速いスワイプを生み出し、長い
-        デュレーションはよりゆっくりと制御されたスワイプを生み出します。</string>
+    <!-- Gesture Action slideshow -->
+    <string name="tutorial_slideshow_gesture_action_title">ジェスチャーアクション</string>
+    <string name="tutorial_slideshow_gesture_action_desc">ジェスチャーの実行方法を学ぶ</string>
+    <string name="tutorial_slideshow_gesture_action_step_1_text">ジェスチャーアクションは、記録または手動で設定した軌跡を、最大 5 本の指で同時に実行します。\n\n軌跡は必ず「押す」から始まり「離す」で終わり、その間に移動や待機を入れることができます。ジェスチャー全体の最大時間は 60 秒です。\n\nこれにより、スワイプやピンチズームなどの複雑なジェスチャーを簡単に再現できます。アクションリストの記録ボタンを使って、画面上で直接ジェスチャーを記録してみましょう！\n\n注：ジェスチャー内の待機は Android 8 以降でのみ利用できます。</string>
+    <string name="tutorial_slideshow_gesture_action_step_2_text">ジェスチャーの最後で最初の指を押したままにして、その間もシナリオの実行を続けることができます。ジェスチャーの「離す」ステップを展開し、指を離すタイミングを選んでください：すぐに、イベントのすべてのアクションが実行された後、イベントの条件が満たされなくなったとき、または一定時間後。\n\n注意点：\n• 押し続けられる指は一度に 1 本だけです。別の押し続けを開始すると、前の指は離されます。\n• 指を押し続けている間、関連するイベントは指が離されるまで再び実行されません。\n• 画面を手動でタッチすると、押し続けは中断されます。\n• 押し続けられる最大時間は、お使いのシステムと自動化しているアプリによって異なります。無制限に押し続けられるシステムもあれば、そうでないものもあります。</string>
 
     <!-- Click Action Offset slideshow -->
     <string name="tutorial_slideshow_click_action_offset_title">クリックオフセット</string>
@@ -191,6 +189,13 @@
         評価され、残りは無視されます。そのため、Klick\'r はどの条件が検出されるかを事前に知ることができません。
         \n\n結果として、ORオペレーターでは特定の条件をターゲットとして選ぶことができません：クリックは常に実行時に
         最初に検出された条件に適用されます。</string>
+
+    <!-- Conditions List slideshow -->
+    <string name="tutorial_slideshow_conditions_list_title">条件リスト</string>
+    <string name="tutorial_slideshow_conditions_list_desc">条件リストの実行方法を学ぶ</string>
+
+    <string name="tutorial_slideshow_conditions_list_step_1_text">画面上のどこでも左/右にスワイプすると、次/前の条件を表示できます。\n\n&lt;&lt; と &gt;&gt; ボタンを使うか、インデックスボックスを直接タップして条件の順序を変更できます。</string>
+    <string name="tutorial_slideshow_conditions_list_step_2_text">高度に最適化されたシナリオでは、リスト内の条件の順序が重要になります。色の条件のような軽い条件を先頭に置くことで、軽い条件が満たされない場合に、後に続く重い条件が評価されなくなります。\n\nOR 演算子を使用する場合はこのロジックが逆になり、最初の条件が満たされると後に続く条件は評価されません。</string>
 
     <!-- Combine Conditions Ordering slideshow -->
     <string name="tutorial_slideshow_combine_conditions_ordering_title">条件の順序と速度</string>
@@ -223,8 +228,10 @@
     <!-- Actions List slideshow -->
     <string name="tutorial_slideshow_actions_list_title">アクションリスト</string>
     <string name="tutorial_slideshow_actions_list_desc">アクションリストの実行方法を学ぶ</string>
-    <string name="tutorial_slideshow_actions_list_step_1_text">アクションは順番に、一つずつ実行されます。&lt;&lt; と
-        &gt;&gt; ボタンを使うか、インデックス番号を直接タップしてアクションの順序を変更できます。\n\nアクションリストは
+    <string name="tutorial_slideshow_actions_list_step_1_text">アクションは順番に、一つずつ実行されます。
+        画面上のどこでも左/右にスワイプすると、次/前のアクションを表示できます。\n\n&lt;&lt; と &gt;&gt;
+        ボタンを使うか、インデックスボックスを直接タップしてアクションの順序を変更できます。</string>
+    <string name="tutorial_slideshow_actions_list_step_2_text">アクションリストは
         短く保つようにしましょう。通常のオートクリッカーはイベントごとに一か所をタップします——それが従うべきモデルです。一つの
         イベントに多くのアクションを追加していると感じたら、それは作業を複数のイベントに分割すべきサインです。各イベントが
         実際に画面に表示されているものに反応するようにしましょう。これが Klick\'r の「見て動く」哲学です：まず検出、それから

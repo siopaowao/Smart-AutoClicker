@@ -138,12 +138,11 @@
         Klick\'r 重新开始分析屏幕。\n\n在两个动作之间添加等待也是有效的，但在列表末尾添加等待通常是更重要的
         需求。</string>
 
-    <!-- Swipe Action slideshow -->
-    <string name="tutorial_slideshow_swipe_action_title">滑动动作</string>
-    <string name="tutorial_slideshow_swipe_action_desc">了解滑动手势的执行方式</string>
-    <string name="tutorial_slideshow_swipe_action_step_1_text">滑动动作沿直线从起始位置到结束位置执行拖动手势。
-        两个坐标都是固定的，在动作配置中设定。\n\n持续时间控制手势从开始到结束所需的时间：较短的持续时间产生
-        更快的滑动，较长的持续时间产生更慢、更受控的滑动。</string>
+    <!-- Gesture Action slideshow -->
+    <string name="tutorial_slideshow_gesture_action_title">手势动作</string>
+    <string name="tutorial_slideshow_gesture_action_desc">了解手势的执行方式</string>
+    <string name="tutorial_slideshow_gesture_action_step_1_text">手势动作会执行您录制或手动设置的路径，最多支持五根手指同时操作。\n\n路径总是以按下开始、以松开结束，中间可以包含移动和等待。整个手势的最长时长为 60 秒。\n\n借此，您可以轻松重现滑动、双指缩放等复杂手势。试试动作列表中的录制按钮，直接在屏幕上录制一个手势吧！\n\n注意：手势中的等待仅在 Android 8 及以上版本可用。</string>
+    <string name="tutorial_slideshow_gesture_action_step_2_text">您可以在手势结束时保持第一根手指按住，并在按住期间继续执行场景。展开手势的“松开”步骤，选择何时松开手指：立即、事件的所有动作执行完毕后、事件不再满足时，或一段时间后。\n\n请注意：\n• 同一时间只能按住一根手指，开始新的按住会松开之前的手指。\n• 手指按住期间，相关事件在手指松开前不会再次触发。\n• 如果您手动触摸屏幕，按住将被中断。\n• 最长按住时间取决于您的系统和正在自动化的应用。有些系统允许无限时长，有些则不允许。</string>
 
     <!-- Click Action Offset slideshow -->
     <string name="tutorial_slideshow_click_action_offset_title">点击偏移</string>
@@ -166,6 +165,13 @@
     <string name="tutorial_slideshow_click_action_target_step_4_text">使用 OR 运算符时，只有第一个满足的条件会被
         评估，其余条件将被忽略。因此，Klick\'r 无法提前知道哪个条件会被检测到。\n\n因此，使用 OR 运算符时无法
         选择特定条件作为目标：点击始终会应用于运行时第一个检测到的条件，无论它是哪个。</string>
+
+    <!-- Conditions List slideshow -->
+    <string name="tutorial_slideshow_conditions_list_title">条件列表</string>
+    <string name="tutorial_slideshow_conditions_list_desc">了解条件列表的执行方式</string>
+
+    <string name="tutorial_slideshow_conditions_list_step_1_text">在屏幕任意位置向左/向右滑动即可查看下一个/上一个条件。\n\n您可以使用 &lt;&lt; 和 &gt;&gt; 按钮更改条件的顺序，或直接点击其索引框。</string>
+    <string name="tutorial_slideshow_conditions_list_step_2_text">在高度优化的场景中，条件在列表中的顺序很重要。将颜色条件等较轻量的条件放在前面，可以确保在轻量条件未满足时，不会评估后面较重的条件。\n\n请注意，如果使用 OR 运算符，此逻辑会反转：只要第一个条件满足，后面的条件就不会被评估。</string>
 
     <!-- Combine Conditions Ordering slideshow -->
     <string name="tutorial_slideshow_combine_conditions_ordering_title">条件顺序与速度</string>
@@ -195,8 +201,10 @@
     <!-- Actions List slideshow -->
     <string name="tutorial_slideshow_actions_list_title">动作列表</string>
     <string name="tutorial_slideshow_actions_list_desc">了解动作列表的执行方式</string>
-    <string name="tutorial_slideshow_actions_list_step_1_text">动作按顺序依次执行。您可以使用 &lt;&lt; 和 &gt;&gt;
-        按钮更改动作的顺序，或直接点击其索引编号。\n\n请尽量保持动作列表简短。普通自动点击器每个事件只执行一个动作——这就是
+    <string name="tutorial_slideshow_actions_list_step_1_text">动作按顺序依次执行。
+        在屏幕任意位置向左/向右滑动即可查看下一个/上一个动作。\n\n您可以使用 &lt;&lt; 和 &gt;&gt;
+        按钮更改动作的顺序，或直接点击其索引框。</string>
+    <string name="tutorial_slideshow_actions_list_step_2_text">请尽量保持动作列表简短。普通自动点击器每个事件只执行一个动作——这就是
         应该遵循的模式。如果您发现自己在单个事件中添加了很多动作，通常说明应该将工作拆分为多个事件，每个事件响应屏幕上
         实际显示的内容。这就是 Klick\'r 的"看见即行动"理念：先检测，再行动。</string>
 

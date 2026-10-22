@@ -21,13 +21,17 @@ import android.util.Log
 import com.buzbuz.smartautoclicker.core.domain.model.action.Action
 import com.buzbuz.smartautoclicker.core.domain.model.action.ChangeCounter
 import com.buzbuz.smartautoclicker.core.domain.model.action.Click
+import com.buzbuz.smartautoclicker.core.domain.model.action.Gesture
 import com.buzbuz.smartautoclicker.core.domain.model.action.Intent
 import com.buzbuz.smartautoclicker.core.domain.model.action.Notification
 import com.buzbuz.smartautoclicker.core.domain.model.action.Pause
 import com.buzbuz.smartautoclicker.core.domain.model.action.SetText
-import com.buzbuz.smartautoclicker.core.domain.model.action.Swipe
 import com.buzbuz.smartautoclicker.core.domain.model.action.SystemAction
 import com.buzbuz.smartautoclicker.core.domain.model.action.ToggleEvent
+import com.buzbuz.smartautoclicker.core.domain.model.action.gesture.GestureFinger
+import com.buzbuz.smartautoclicker.core.domain.model.action.gesture.GestureFingerMotion
+import com.buzbuz.smartautoclicker.core.domain.model.action.position.CoordinatesValue
+import com.buzbuz.smartautoclicker.core.domain.model.action.position.Position
 import com.buzbuz.smartautoclicker.core.domain.model.condition.Condition
 import com.buzbuz.smartautoclicker.core.domain.model.condition.ScreenCondition
 import com.buzbuz.smartautoclicker.core.domain.model.condition.TriggerCondition
@@ -52,12 +56,26 @@ class ReplaceMissingCounterReferenceUseCase @Inject constructor() {
             event.replaceInCondition(itemToEdit, missingReference, replacement)
     }
 
+    /** Returns null if the action type can't reference a counter. */
+    operator fun invoke(
+        action: Action,
+        missingReference: MissingCopyReference.CounterReference,
+        replacement: String,
+    ): Action? = action.replaceCounterReference(missingReference.name, replacement)
+
+    /** Returns null if the condition type can't reference a counter. */
+    operator fun invoke(
+        condition: Condition,
+        missingReference: MissingCopyReference.CounterReference,
+        replacement: String,
+    ): Condition? = condition.replaceCounterReference(missingReference.name, replacement)
+
     private fun Event.replaceInAction(
         itemToEdit: ItemWithMissingReferences.ActionItem,
         missingReference: MissingCopyReference.CounterReference,
         replacement: String,
     ): Event {
-        val newAction = itemToEdit.item.replaceCounterReference(missingReference.name, replacement)
+        val newAction = invoke(itemToEdit.item, missingReference, replacement)
             ?: return this
 
         val actionIndex = actions.indexOf(itemToEdit.item)
@@ -79,7 +97,7 @@ class ReplaceMissingCounterReferenceUseCase @Inject constructor() {
         missingReference: MissingCopyReference.CounterReference,
         replacement: String,
     ): Event {
-        val newCondition = itemToEdit.item.replaceCounterReference(missingReference.name, replacement)
+        val newCondition = invoke(itemToEdit.item, missingReference, replacement)
             ?: return this
 
         val conditionIndex = conditions.indexOf(itemToEdit.item)
@@ -99,13 +117,13 @@ class ReplaceMissingCounterReferenceUseCase @Inject constructor() {
     private fun Action.replaceCounterReference(oldName: String, newName: String): Action? =
         when (this) {
             is ChangeCounter -> replaceCounterReference(oldName, newName)
+            is Click -> replaceCounterReference(oldName, newName)
+            is Gesture -> replaceCounterReference(oldName, newName)
             is Notification -> replaceCounterReference(oldName, newName)
             is SetText -> replaceCounterReference(oldName, newName)
 
-            is Click,
             is Intent,
             is Pause,
-            is Swipe,
             is SystemAction,
             is ToggleEvent -> {
                 Log.e(TAG, "Can't replace counter reference, action type is not supported.")
@@ -117,9 +135,58 @@ class ReplaceMissingCounterReferenceUseCase @Inject constructor() {
         copy(
             counterName = if (counterName == oldName) newName else counterName,
             operationValue =
-                if ((operationValue as? CounterOperationValue.Counter)?.value != oldName) operationValue
+                if ((operationValue as? CounterOperationValue.Counter)?.counterName != oldName) operationValue
                 else CounterOperationValue.Counter(newName),
         )
+
+    private fun Click.replaceCounterReference(oldName: String, newName: String): Click =
+        copy(
+            position = position?.replaceCounterReference(oldName, newName),
+            offset = offset?.replaceCounterReference(oldName, newName),
+        )
+
+    private fun Gesture.replaceCounterReference(oldName: String, newName: String): Gesture =
+        copy(fingers = fingers.map { it.replaceCounterReference(oldName, newName) })
+
+    private fun GestureFinger.replaceCounterReference(oldName: String, newName: String): GestureFinger =
+        copy(motions = motions.map { it.replaceCounterReference(oldName, newName) })
+
+    private fun GestureFingerMotion.replaceCounterReference(oldName: String, newName: String): GestureFingerMotion =
+        when (this) {
+            is GestureFingerMotion.Press -> copy(
+                position = position.replaceCounterReference(oldName, newName),
+                offset = offset.replaceCounterReference(oldName, newName),
+            )
+            is GestureFingerMotion.Move -> copy(
+                position = position.replaceCounterReference(oldName, newName),
+                offset = offset.replaceCounterReference(oldName, newName),
+            )
+            is GestureFingerMotion.Wait,
+            is GestureFingerMotion.Release -> this
+        }
+
+    private fun Position.replaceCounterReference(oldName: String, newName: String): Position =
+        when (this) {
+            is Position.Condition -> this
+            is Position.Coordinates -> replaceCounterReference(oldName, newName)
+        }
+
+    private fun Position.Coordinates.replaceCounterReference(
+        oldName: String,
+        newName: String,
+    ): Position.Coordinates =
+        copy(
+            x = x.replaceCounterReference(oldName, newName),
+            y = y.replaceCounterReference(oldName, newName),
+        )
+
+    private fun CoordinatesValue.replaceCounterReference(oldName: String, newName: String): CoordinatesValue =
+        when (this) {
+            is CoordinatesValue.Literal -> this
+            is CoordinatesValue.Counter ->
+                if (counterName == oldName) CoordinatesValue.Counter(newName)
+                else this
+        }
 
     private fun Notification.replaceCounterReference(oldName: String, newName: String): Notification =
         copy(messageText = messageText.replaceCounterName(oldName, newName))
@@ -149,7 +216,7 @@ class ReplaceMissingCounterReferenceUseCase @Inject constructor() {
         copy(
             counterName = if (counterName == oldName) newName else counterName,
             counterValue =
-                if ((counterValue as? CounterOperationValue.Counter)?.value != oldName) counterValue
+                if ((counterValue as? CounterOperationValue.Counter)?.counterName != oldName) counterValue
                 else CounterOperationValue.Counter(newName),
         )
 
@@ -159,7 +226,7 @@ class ReplaceMissingCounterReferenceUseCase @Inject constructor() {
     ): ScreenCondition.Number =
         copy(
             counterValue =
-                if ((counterValue as? CounterOperationValue.Counter)?.value != oldName) counterValue
+                if ((counterValue as? CounterOperationValue.Counter)?.counterName != oldName) counterValue
                 else CounterOperationValue.Counter(newName),
         )
 }

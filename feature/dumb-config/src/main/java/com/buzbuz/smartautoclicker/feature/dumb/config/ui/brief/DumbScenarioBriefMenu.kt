@@ -83,8 +83,8 @@ class DumbScenarioBriefMenu(
     override fun onCreateMenu(layoutInflater: LayoutInflater): ViewGroup {
         dumbActionCreator = DumbActionCreator(
             createNewDumbClick = { position -> viewModel.createNewDumbClick(context, position) },
-            createNewDumbSwipe = { from, to -> viewModel.createNewDumbSwipe(context, from, to) },
             createNewDumbPause = { viewModel.createNewDumbPause(context) },
+            createNewDumbGesture = { viewModel.createNewDumbGesture(context) },
             createDumbActionCopy = viewModel::createDumbActionCopy,
         )
         createCopyActionUiFlowListener = DumbActionUiFlowListener(
@@ -187,9 +187,13 @@ class DumbScenarioBriefMenu(
 
         viewModel.startGestureCaptureState()
         startGestureCapture { gesture, isFinished ->
-            if (gesture == null || !isFinished) return@startGestureCapture
+            if (!isFinished) return@startGestureCapture
             viewModel.endGestureCaptureState(context, gesture)
         }
+    }
+
+    override fun onGestureCaptureCancelled() {
+        viewModel.cancelGestureCaptureState()
     }
 
     private fun onCreateDumbActionClicked() {

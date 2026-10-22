@@ -168,13 +168,11 @@
         entre dos acciones también es válida, pero añadir una al final de la lista suele ser la necesidad más
         importante.</string>
 
-    <!-- Swipe Action slideshow -->
-    <string name="tutorial_slideshow_swipe_action_title">Acción Deslizamiento</string>
-    <string name="tutorial_slideshow_swipe_action_desc">Aprende cómo se realiza el gesto de deslizamiento</string>
-    <string name="tutorial_slideshow_swipe_action_step_1_text">Una Acción Deslizamiento realiza un gesto de arrastrar
-        en línea recta desde una posición de inicio hasta una posición de fin. Ambas coordenadas son fijas y se
-        establecen al configurar la acción.\n\nLa duración controla cuánto tiempo tarda el gesto: una duración más
-        corta produce un deslizamiento más rápido, mientras que una más larga produce uno más lento y controlado.</string>
+    <!-- Gesture Action slideshow -->
+    <string name="tutorial_slideshow_gesture_action_title">Acción Gesto</string>
+    <string name="tutorial_slideshow_gesture_action_desc">Aprende cómo se realiza el gesto</string>
+    <string name="tutorial_slideshow_gesture_action_step_1_text">Una Acción Gesto reproduce un recorrido que has grabado o configurado manualmente, con hasta cinco dedos al mismo tiempo.\n\nUn recorrido siempre empieza con una pulsación y termina soltando el dedo, con movimientos y esperas entre medias. La duración total máxima de un gesto es de 60 segundos.\n\nAsí puedes recrear fácilmente deslizamientos, zoom con dos dedos y otros gestos complejos. ¡Prueba el botón de grabar de la lista de acciones para capturar uno directamente en la pantalla!\n\nNota: las esperas dentro de un gesto solo están disponibles a partir de Android 8.</string>
+    <string name="tutorial_slideshow_gesture_action_step_2_text">Puedes mantener pulsado el primer dedo al final de un gesto y seguir ejecutando el escenario mientras tanto. Despliega el paso Soltar del gesto y elige cuándo debe soltarse el dedo: inmediatamente, cuando se hayan ejecutado todas las acciones del evento, cuando el evento deje de cumplirse o tras un tiempo.\n\nTen en cuenta que:\n• Solo se puede mantener una pulsación a la vez: iniciar otra soltará la anterior.\n• Mientras un dedo se mantiene pulsado, el evento relacionado no se volverá a activar hasta que se suelte.\n• Si tocas la pantalla manualmente, la pulsación mantenida se interrumpirá.\n• La duración máxima depende de tu sistema y de la aplicación que se está automatizando. Algunos sistemas permiten una duración ilimitada, otros no.</string>
 
     <!-- Click Action Offset slideshow -->
     <string name="tutorial_slideshow_click_action_offset_title">Desplazamiento del clic</string>
@@ -203,6 +201,18 @@
         condición cumplida y las demás se omiten. Por ello, Klick\'r no puede saber de antemano cuál se detectará.
         \n\nEn consecuencia, con el operador OR no puedes elegir una condición específica como objetivo: el clic
         siempre se aplicará en la primera detectada, sea cual sea en tiempo de ejecución.</string>
+
+    <!-- Conditions List slideshow -->
+    <string name="tutorial_slideshow_conditions_list_title">Lista de condiciones</string>
+    <string name="tutorial_slideshow_conditions_list_desc">Aprende cómo se ejecuta la lista de condiciones</string>
+
+    <string name="tutorial_slideshow_conditions_list_step_1_text">Puedes visualizar la condición siguiente/anterior deslizando hacia la izquierda/derecha en cualquier
+        parte de la pantalla.\n\nPuedes cambiar el orden de una condición usando los botones &lt;&lt; y &gt;&gt;, o
+        pulsando directamente en su casilla de índice.</string>
+    <string name="tutorial_slideshow_conditions_list_step_2_text">En escenarios muy optimizados, el orden de las condiciones en la
+        lista importa. Colocar primero las condiciones más ligeras, como las Condiciones de color, garantiza que las
+        siguientes, más pesadas, no se evalúen si la ligera no se cumple.\n\nTen en cuenta que esta lógica se invierte
+        si usas el operador O, ya que las siguientes no se evaluarán si la primera se cumple.</string>
 
     <!-- Combine Conditions Ordering slideshow -->
     <string name="tutorial_slideshow_combine_conditions_ordering_title">Orden de condiciones y velocidad</string>
@@ -247,8 +257,10 @@
     <string name="tutorial_slideshow_actions_list_title">Lista de acciones</string>
     <string name="tutorial_slideshow_actions_list_desc">Aprende cómo se ejecuta la lista de acciones</string>
     <string name="tutorial_slideshow_actions_list_step_1_text">Las acciones se ejecutan en orden, una tras otra.
-        Puedes cambiar el orden de una acción usando los botones &lt;&lt; y &gt;&gt;, o pulsando directamente en su
-        número de índice.\n\nIntenta mantener tus listas de acciones cortas. Un autoclicker normal realiza una acción
+        Puedes visualizar la acción siguiente/anterior deslizando hacia la izquierda/derecha en cualquier parte de la
+        pantalla.\n\nPuedes cambiar el orden de una acción usando los botones &lt;&lt; y &gt;&gt;, o pulsando
+        directamente en su casilla de índice.</string>
+    <string name="tutorial_slideshow_actions_list_step_2_text">Intenta mantener tus listas de acciones cortas. Un autoclicker normal realiza una acción
         por evento — ese es el modelo a seguir. Si te encuentras añadiendo muchas acciones a un solo evento, normalmente
         es señal de que el trabajo debería dividirse en varios eventos, cada uno reaccionando a lo que realmente se
         muestra en pantalla. Esta es la filosofía ver-y-actuar de Klick\'r: detectar primero, luego actuar.</string>
