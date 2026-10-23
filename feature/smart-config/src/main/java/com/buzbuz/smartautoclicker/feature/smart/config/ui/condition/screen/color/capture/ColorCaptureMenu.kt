@@ -112,13 +112,13 @@ selectorView.onSelectedAreaChanged = { area ->
             R.id.btn_confirm -> when (captureStep) {
                 ColorCaptureMenuStep.SCREENSHOT_SELECTION -> viewModel.captureScreen()
                 ColorCaptureMenuStep.PIXEL_SELECTION -> {
-    viewModel.getPixelSelection()?.let { (position, color) ->
-        val x = position.x.toInt()
-        val y = position.y.toInt()
-        val area = Rect(x, y, x + 1, y + 1)
+    val selection = viewModel.getPixelSelection()
+    val area = viewModel.getSelectedArea()
 
+    if (selection != null && area != null && !area.isEmpty) {
+        val (_, color) = selection
         back()
-        onColorSelected(area, color)
+        onColorSelected(Rect(area), color)
     }
 }
                 ColorCaptureMenuStep.CAPTURING -> return
