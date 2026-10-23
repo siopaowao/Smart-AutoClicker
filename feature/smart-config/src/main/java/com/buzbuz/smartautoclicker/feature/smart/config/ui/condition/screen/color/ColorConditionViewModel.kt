@@ -86,7 +86,7 @@ class ColorConditionViewModel  @Inject constructor(
 
     
 fun setDetectionArea(area: Rect) {
-    if (area.width() <= 0 || area.height() <= 0) return
+    if (area.isEmpty) return
 
     updateEditedCondition { condition ->
         condition.copy(detectionArea = Rect(area))
