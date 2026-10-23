@@ -26,6 +26,9 @@ import android.graphics.RectF
 import android.view.MotionEvent
 import androidx.core.content.res.use
 import androidx.core.graphics.drawable.toDrawable
+import android.graphics.Rect
+import android.graphics.Paint
+import android.graphics.Color
 
 import com.buzbuz.smartautoclicker.core.display.config.DisplayConfigManager
 import com.buzbuz.smartautoclicker.core.ui.R
@@ -44,6 +47,26 @@ class PixelSelectorView(
 
     /** The bitmap currently set to the view. */
     private var currentBitmap: Bitmap? = null
+    
+/** Whether rectangle selection is enabled. */
+var rectangleSelectionEnabled: Boolean = false
+
+/** Current drag-selection rectangle in view coordinates. */
+private var dragStartX = 0f
+private var dragStartY = 0f
+private var dragEndX = 0f
+private var dragEndY = 0f
+private var isDragging = false
+
+private val selectionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    color = Color.GREEN
+    style = Paint.Style.STROKE
+    strokeWidth = 3f
+}
+
+/** Callback with the selected rectangle in view coordinates. */
+var onSelectedAreaChanged: ((Rect) -> Unit)? = null
+    
     /** Controls the display of the bitmap captured. */
     private lateinit var capture: CaptureComponent
     /** Controls the display the currently selected pixel. */
@@ -74,15 +97,75 @@ class PixelSelectorView(
         invalidate()
     }
 
-    @SuppressLint("ClickableViewAccessibility")
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
-        event ?: return false
+    
+@SuppressLint("ClickableViewAccessibility")
+override fun onTouchEvent(event: MotionEvent?): Boolean {
+    event ?: return false
 
-        position.pixelPosition.set(event.x.roundToInt().toFloat(), event.y.roundToInt().toFloat())
-        onSelectedPositionChanged(PointF(position.pixelPosition.x, position.pixelPosition.y))
+    if (!rectangleSelectionEnabled) {
+        position.pixelPosition.set(
+            event.x.roundToInt().toFloat(),
+            event.y.roundToInt().toFloat()
+        )
+        onSelectedPositionChanged(
+            PointF(position.pixelPosition.x, position.pixelPosition.y)
+        )
         invalidate()
         return true
     }
+
+    when (event.actionMasked) {
+        MotionEvent.ACTION_DOWN -> {
+            dragStartX = event.x
+            dragStartY = event.y
+            dragEndX = event.x
+            dragEndY = event.y
+            isDragging = true
+            invalidate()
+            return true
+        }
+
+        MotionEvent.ACTION_MOVE -> {
+            if (isDragging) {
+                dragEndX = event.x
+                dragEndY = event.y
+                invalidate()
+            }
+            return true
+        }
+
+        MotionEvent.ACTION_UP -> {
+            if (isDragging) {
+                dragEndX = event.x
+                dragEndY = event.y
+                isDragging = false
+
+                val area = Rect(
+                    minOf(dragStartX, dragEndX).roundToInt(),
+                    minOf(dragStartY, dragEndY).roundToInt(),
+                    maxOf(dragStartX, dragEndX).roundToInt(),
+                    maxOf(dragStartY, dragEndY).roundToInt()
+                )
+
+                if (area.width() > 0 && area.height() > 0) {
+                    onSelectedAreaChanged?.invoke(area)
+                }
+
+                invalidate()
+            }
+            return true
+        }
+
+        MotionEvent.ACTION_CANCEL -> {
+            isDragging = false
+            invalidate()
+            return true
+        }
+    }
+
+    return true
+}
+
 
     private fun Context.obtainPixelSelectorViewStyledAttributes(): TypedArray =
         obtainStyledAttributes(null, R.styleable.PixelSelectorView, R.attr.pixelSelectorStyle, 0)
