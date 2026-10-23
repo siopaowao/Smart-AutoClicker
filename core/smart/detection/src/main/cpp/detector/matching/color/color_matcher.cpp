@@ -1,18 +1,7 @@
+
 /*
  * Copyright (C) 2026 Kevin Buzeau
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * Licensed under the GNU General Public License v3.0 or later.
  */
 
 #include <opencv2/imgproc/imgproc.hpp>
@@ -22,9 +11,7 @@
 #include "../../../logs/log.h"
 #include "../../../utils/roi.h"
 
-
 using namespace smartautoclicker;
-
 
 void ColorMatcher::reset() {
     currentMatchingResult.reset();
@@ -34,11 +21,14 @@ ColorMatchingResult *ColorMatcher::getMatchingResults() {
     return &currentMatchingResult;
 }
 
-bool ColorMatcher::isRoiValidForMatching(const cv::Rect& screenRoi, const cv::Rect& roi) {
-    if (roi.width <= 0 || roi.height <= 0 || !isRoiContainsOrEquals(screenRoi, roi)) {
-        LOGD("Detector", "Can't detect color, detection area (x=%d, y=%d, w=%d, h=%d) is not contained in screen (w=%d, h=%d)",
-             roi.x, roi.y, roi.width, roi.height,
-             screenRoi.width, screenRoi.height);
+bool ColorMatcher::isRoiValidForMatching(
+        const cv::Rect& screenRoi,
+        const cv::Rect& roi) {
+    if (roi.width <= 0 || roi.height <= 0 ||
+        !isRoiContainsOrEquals(screenRoi, roi)) {
+        LOGD("Detector",
+             "Invalid color detection area: x=%d y=%d w=%d h=%d",
+             roi.x, roi.y, roi.width, roi.height);
         return false;
     }
 
@@ -49,26 +39,44 @@ void ColorMatcher::matchColor(
         const ScreenImage& screenImage,
         const cv::Scalar& conditionColor,
         const cv::Rect& detectionArea,
-        int threshold
-) {
+        int threshold) {
 
-    // Crop the color screen image to get only the detection area
-    cv::Mat screenCroppedColorMat = screenImage.cropColor(detectionArea);
-    if (screenCroppedColorMat.empty()) {
-        LOGE("ColorMatcher", "screenCroppedColorMat is empty after cropping.");
+    // Extract the selected rectangular region.
+    cv::Mat cropped = screenImage.cropColor(detectionArea);
+
+    if (cropped.empty()) {
+        LOGE("ColorMatcher", "Color detection area is empty.");
         return;
     }
 
-    // Compute the difference between each channel color (RGB)
-    auto imageColorMeans = mean(screenCroppedColorMat);
-    double diff = 0;
-    for (int i = 0; i < 3; i++) {
-        diff += abs(imageColorMeans.val[i] - conditionColor.val[i]);
+    // Search for at least one matching pixel.
+    // OpenCV channel order and conditionColor must remain consistent
+    // with the existing project color conversion.
+    const int tolerance = threshold * 255 / 100;
+
+    for (int y = 0; y < cropped.rows; ++y) {
+        for (int x = 0; x < cropped.cols; ++x) {
+            const cv::Vec3b pixel = cropped.at<cv::Vec3b>(y, x);
+
+            int totalDifference = 0;
+
+            for (int channel = 0; channel < 3; ++channel) {
+                totalDifference += std::abs(
+                    static_cast<int>(pixel[channel]) -
+                    static_cast<int>(conditionColor[channel]));
+            }
+
+            // Average absolute RGB-channel difference.
+            if (totalDifference <= tolerance * 3) {
+                currentMatchingResult.updateResults(
+                    detectionArea, 0.0);
+                currentMatchingResult.markResultAsDetected();
+                return;
+            }
+        }
     }
-    diff = diff / (255 * 3);
 
-    currentMatchingResult.updateResults(detectionArea, diff);
-
-    // If the colors are OK, the result is valid
-    if ((diff * 100) <= threshold) currentMatchingResult.markResultAsDetected();
+    // No matching pixel found.
+    currentMatchingResult.updateResults(
+        detectionArea, 1.0);
 }
