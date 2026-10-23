@@ -175,7 +175,7 @@ class GestureEditorOverlayMenu(
         editorView.recordingFingerPath = EMPTY_FINGER_PATH.copy(startTimeMs = existingStartTimeMs)
 
         gestureRecordView.apply {
-            maxDurationMs = Gesture.GESTURE_MAXIMUM_DURATION_MS
+            startTimeOffsetMs = existingStartTimeMs
             visibility = View.VISIBLE
             gestureCaptureListener = { gesture, isFinished ->
                 val firstFinger = gesture?.toRecordedFingers()?.firstOrNull()

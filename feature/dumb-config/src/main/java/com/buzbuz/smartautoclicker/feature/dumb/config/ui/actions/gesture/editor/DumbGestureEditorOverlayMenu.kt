@@ -170,7 +170,7 @@ class DumbGestureEditorOverlayMenu(
         editorView.recordingFingerPath = EMPTY_FINGER_PATH.copy(startTimeMs = existingStartTimeMs)
 
         gestureRecordView.apply {
-            maxDurationMs = DumbAction.DumbGesture.GESTURE_MAXIMUM_DURATION_MS
+            startTimeOffsetMs = existingStartTimeMs
             visibility = View.VISIBLE
             gestureCaptureListener = { gesture, isFinished ->
                 val firstFinger = gesture?.toRecordedFingers()?.firstOrNull()

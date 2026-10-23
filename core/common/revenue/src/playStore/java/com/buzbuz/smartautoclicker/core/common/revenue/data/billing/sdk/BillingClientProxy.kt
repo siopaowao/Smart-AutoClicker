@@ -41,6 +41,7 @@ internal class BillingClientProxy(
     context: Context,
     private val productId: String,
     private val onPurchaseStateFromUiFlow: (Purchase?) -> Unit,
+    private val onAlreadyOwnedFromUiFlow: () -> Unit,
 ) {
 
     internal val client = BillingClient.newBuilder(context)
@@ -76,6 +77,7 @@ internal class BillingClientProxy(
                 BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> {
                     Log.i(TAG, "onPurchasesUpdated: The user already owns this item. ${result.toLogString()}")
                     billingUiFlowState.value = BillingUiFlowState.NOT_VISIBLE_ALREADY_OWNED
+                    onAlreadyOwnedFromUiFlow()
                 }
                 BillingClient.BillingResponseCode.DEVELOPER_ERROR -> {
                     Log.e(TAG, "onPurchasesUpdated: Google Play \"does not recognize the configuration. ${result.toLogString()}")
@@ -158,23 +160,17 @@ internal class BillingClientProxy(
         return (false to product)
     }
 
-    suspend fun acknowledgePurchase(purchase: Purchase): Boolean {
-        if (purchase.isAcknowledged) {
-            Log.d(TAG, "Purchase is already acknowledged")
-            return true
-        }
-
+    suspend fun acknowledgePurchase(purchase: Purchase): BillingResult {
         Log.i(TAG, "Acknowledging purchase")
 
         val billingResult = client.acknowledgePurchase(acknowledgePurchaseQueryParams(purchase.purchaseToken))
         if (billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
             Log.e(TAG, "Error acknowledging purchase. ${billingResult.toLogString()}")
-            return false
+        } else {
+            Log.i(TAG, "Purchase acknowledged")
         }
 
-        Log.i(TAG, "Purchase acknowledged")
-
-        return true
+        return billingResult
     }
 
     private suspend fun fetchInAppProductDetailsCompat(): Pair<BillingResult, InAppProduct?>? =

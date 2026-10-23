@@ -56,9 +56,17 @@ class GestureRecordView @JvmOverloads constructor(
 
     var gestureCaptureListener: ((gesture: RecordedGesture?, isFinished: Boolean) -> Unit)? = null
 
-    var maxDurationMs: Long
-        get() = gestureRecorder.maxDurationMs
-        set(value) { gestureRecorder.maxDurationMs = value }
+    /**
+     * Time in ms at which the recorded gesture will be placed. It is deducted from the maximum recording duration, so
+     * the recorded gesture still ends before the Android limit.
+     */
+    var startTimeOffsetMs: Long = 0L
+        set(value) {
+            field = value
+            gestureRecorder.maxDurationMs = (defaultMaxDurationMs - value).coerceAtLeast(1L)
+        }
+
+    private val defaultMaxDurationMs: Long = gestureRecorder.maxDurationMs
 
     override val viewComponents: List<ViewComponent> = listOf(
         DisplayBorderComponent(

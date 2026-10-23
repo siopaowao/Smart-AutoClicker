@@ -19,6 +19,8 @@ package com.buzbuz.smartautoclicker.core.common.revenue.data.billing
 import android.util.Log
 import androidx.annotation.VisibleForTesting
 
+import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.buzbuz.smartautoclicker.core.common.revenue.data.billing.issue.BillingIssue
 import com.buzbuz.smartautoclicker.core.common.revenue.data.billing.issue.BillingIssueReporter
@@ -26,6 +28,7 @@ import com.buzbuz.smartautoclicker.core.common.revenue.data.billing.cache.Cached
 import com.buzbuz.smartautoclicker.core.common.revenue.data.billing.cache.PurchaseCache
 import com.buzbuz.smartautoclicker.core.common.revenue.data.billing.sdk.PurchasesQueryResult
 
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.sync.Mutex
@@ -33,6 +36,8 @@ import kotlinx.coroutines.sync.withLock
 
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 internal class NewPurchaseManager @Inject constructor(
     private val purchaseCache: PurchaseCache,
@@ -49,6 +54,10 @@ internal class NewPurchaseManager @Inject constructor(
     private val _state = MutableStateFlow(InAppPurchaseState.NOT_PURCHASED)
     val state: StateFlow<InAppPurchaseState> = _state
 
+    /** True once Google Play answered the purchases query in this process. Until then, [state] can be wrong. */
+    private val _isStateSettled = MutableStateFlow(false)
+    val isStateSettled: StateFlow<Boolean> = _isStateSettled
+
     /** Grant the last confirmed purchase until Google Play can be reached. */
     suspend fun restoreCachedPurchase() {
         mutex.withLock {
@@ -60,22 +69,73 @@ internal class NewPurchaseManager @Inject constructor(
         }
     }
 
-    suspend fun handlePurchasesQueryResult(result: PurchasesQueryResult, ackQuery: suspend (Purchase) -> Boolean) {
+    /**
+     * Play services are often not ready when the process starts, and can stay unreachable for a long time when the
+     * process is started in background after a boot or an app update. The next refresh only happens when the user
+     * opens an activity, so retry without limit until the purchase state is settled, so a purchase can be restored and
+     * acknowledged before Play refunds it.
+     */
+    suspend fun refreshPurchasesUntilSettled(
+        purchasesQuery: suspend () -> PurchasesQueryResult,
+        ackQuery: suspend (Purchase) -> BillingResult,
+    ) {
+        retryWithBackoff { _isStateSettled.value || handlePurchasesQueryResult(purchasesQuery(), ackQuery) }
+    }
+
+    /**
+     * Google Play checks the ownership on its servers for the billing flow, but answers the purchases query from a
+     * local cache that can miss the purchase. Once the billing flow reported the product as already owned, retry until
+     * the purchase is found, without handling it as missing in the meantime.
+     */
+    suspend fun refreshPurchasesUntilFound(
+        purchasesQuery: suspend () -> PurchasesQueryResult,
+        ackQuery: suspend (Purchase) -> BillingResult,
+    ) {
+        var isPurchaseMissing = false
+        val isSettled = retryWithBackoff(maxAttempts = PURCHASES_QUERY_MAX_ATTEMPTS) {
+            val result = purchasesQuery()
+            isPurchaseMissing = result is PurchasesQueryResult.Success && result.purchase == null
+            if (isPurchaseMissing) {
+                Log.i(TAG, "Product is already owned but its purchase is not available yet")
+                false
+            } else {
+                handlePurchasesQueryResult(result, ackQuery)
+            }
+        }
+
+        // Query and acknowledge failures are reported on their own.
+        if (!isSettled && isPurchaseMissing) {
+            Log.w(TAG, "Product is already owned but its purchase was never found")
+            issueReporter.report(BillingIssue.OWNED_PURCHASE_NOT_FOUND)
+        }
+    }
+
+    /** Returns false if Google Play couldn't settle the purchase state and the query should be retried later. */
+    suspend fun handlePurchasesQueryResult(
+        result: PurchasesQueryResult,
+        ackQuery: suspend (Purchase) -> BillingResult,
+    ): Boolean =
         mutex.withLock {
-            when (result) {
+            val isSettled = when (result) {
                 is PurchasesQueryResult.Failure -> {
                     Log.w(TAG, "Purchases query failed with code ${result.responseCode}, keeping state ${_state.value}")
                     issueReporter.report(BillingIssue.PURCHASES_QUERY_FAILED, result.responseCode, result.debugMessage)
+                    false
                 }
 
                 is PurchasesQueryResult.Success ->
                     if (result.purchase != null) handlePurchase(result.purchase, ackQuery)
-                    else handleMissingPurchase()
+                    else {
+                        handleMissingPurchase()
+                        true
+                    }
             }
-        }
-    }
 
-    suspend fun handleUiFlowPurchase(purchase: Purchase?, ackQuery: suspend (Purchase) -> Boolean) {
+            if (isSettled) _isStateSettled.value = true
+            isSettled
+        }
+
+    suspend fun handleUiFlowPurchase(purchase: Purchase?, ackQuery: suspend (Purchase) -> BillingResult) {
         mutex.withLock {
             if (purchase == null) {
                 Log.i(TAG, "Product purchase not yet available")
@@ -86,30 +146,59 @@ internal class NewPurchaseManager @Inject constructor(
         }
     }
 
-    private suspend fun handlePurchase(purchase: Purchase, ackQuery: suspend (Purchase) -> Boolean) {
+    /**
+     * Calls [isSettled] until it returns true, or until it was called [maxAttempts] times if set. The delay between
+     * each attempt doubles, up to [PURCHASES_QUERY_MAX_RETRY_DELAY]. Returns false if all attempts were made without
+     * settling.
+     */
+    private suspend fun retryWithBackoff(maxAttempts: Int? = null, isSettled: suspend () -> Boolean): Boolean {
+        var retryDelay = PURCHASES_QUERY_INITIAL_RETRY_DELAY
+        var attempt = 1
+        while (!isSettled()) {
+            if (attempt == maxAttempts) return false
+
+            delay(retryDelay)
+            retryDelay = minOf(retryDelay * 2, PURCHASES_QUERY_MAX_RETRY_DELAY)
+            attempt++
+        }
+        return true
+    }
+
+    /** Returns false if the purchase couldn't be acknowledged. */
+    private suspend fun handlePurchase(purchase: Purchase, ackQuery: suspend (Purchase) -> BillingResult): Boolean {
         if (purchase.purchaseState != Purchase.PurchaseState.PURCHASED) {
             Log.i(TAG, "Product purchase state: ${purchase.purchaseState}")
             _state.emit(purchase.toPurchaseState())
-            return
+            return true
         }
 
         if (!signatureVerifier.isValid(purchase.originalJson, purchase.signature)) {
             Log.e(TAG, "Invalid signature. Check to make sure your public key is correct.")
             issueReporter.report(BillingIssue.INVALID_SIGNATURE)
             if (getValidCachedPurchase() == null) _state.emit(InAppPurchaseState.ERROR)
-            return
+            return true
         }
 
         if (!purchase.isAcknowledged) {
             Log.i(TAG, "Product purchase state: PURCHASED")
-            _state.emit(InAppPurchaseState.PURCHASED)
+            // A user with a confirmed purchase must not see the paywall while Play waits for the acknowledgement.
+            _state.emit(
+                if (getValidCachedPurchase() != null) InAppPurchaseState.PURCHASED_AND_ACKNOWLEDGED
+                else InAppPurchaseState.PURCHASED
+            )
 
-            if (!ackQuery(purchase)) return
+            val ackResult = ackQuery(purchase)
+            if (ackResult.responseCode != BillingClient.BillingResponseCode.OK) {
+                Log.w(TAG, "Purchase acknowledgement failed with code ${ackResult.responseCode}")
+                issueReporter.report(BillingIssue.ACKNOWLEDGE_FAILED, ackResult.responseCode, ackResult.debugMessage)
+                return false
+            }
             Log.i(TAG, "Product purchase state: PURCHASED_AND_ACKNOWLEDGED")
         }
 
         _state.emit(InAppPurchaseState.PURCHASED_AND_ACKNOWLEDGED)
         cachePurchase(purchase)
+        return true
     }
 
     /**
@@ -126,11 +215,13 @@ internal class NewPurchaseManager @Inject constructor(
 
         val now = currentTimeMs()
         val missingSince = cachedPurchase.missingSinceMs
-            ?: now.also { purchaseCache.setMissingSince(it) }
+            ?: now.also {
+                purchaseCache.setMissingSince(it)
+                issueReporter.report(BillingIssue.CACHED_PURCHASE_MISSING)
+            }
 
         if (now - missingSince < MISSING_PURCHASE_GRACE_MS) {
             Log.w(TAG, "Product purchase not found but cached, keeping it until grace period ends")
-            issueReporter.report(BillingIssue.CACHED_PURCHASE_MISSING)
             _state.emit(InAppPurchaseState.PURCHASED_AND_ACKNOWLEDGED)
             return
         }
@@ -169,6 +260,7 @@ internal class NewPurchaseManager @Inject constructor(
 
             else -> {
                 Log.e(TAG, "Purchase in unknown state: $purchaseState")
+                issueReporter.report(BillingIssue.UNKNOWN_PURCHASE_STATE, purchaseState)
                 InAppPurchaseState.ERROR
             }
         }
@@ -183,5 +275,15 @@ internal enum class InAppPurchaseState {
 }
 
 @VisibleForTesting
-internal val MISSING_PURCHASE_GRACE_MS = 3.days.inWholeMilliseconds
+internal val MISSING_PURCHASE_GRACE_MS = 30.days.inWholeMilliseconds
+/**
+ * Attempts to find a purchase reported as already owned by the billing flow. With the doubling delay, the last attempt
+ * is made ~2.5 minutes after the first one.
+ */
+@VisibleForTesting
+internal const val PURCHASES_QUERY_MAX_ATTEMPTS = 6
+@VisibleForTesting
+internal val PURCHASES_QUERY_INITIAL_RETRY_DELAY = 5.seconds
+@VisibleForTesting
+internal val PURCHASES_QUERY_MAX_RETRY_DELAY = 15.minutes
 private const val TAG = "PurchaseManager"
