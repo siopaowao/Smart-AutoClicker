@@ -89,9 +89,7 @@ fun setDetectionArea(area: Rect) {
     if (area.width() <= 0 || area.height() <= 0) return
 
     updateEditedCondition { condition ->
-        condition.copy(
-            detectionArea = Rect(area)
-        )
+        condition.copy(detectionArea = Rect(area))
     }
 }
 
