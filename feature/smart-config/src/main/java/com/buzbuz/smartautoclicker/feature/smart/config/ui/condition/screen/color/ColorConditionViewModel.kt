@@ -93,6 +93,9 @@ fun setDetectionArea(area: Rect) {
     }
 }
 
+fun getColorSelection(): Pair<Rect, Int>? {
+    // Return the selected rectangle and selected color.
+}
 
     fun toggleShouldBeDetected() {
         updateEditedCondition { oldCondition ->
