@@ -84,6 +84,12 @@ class ColorCaptureMenu (
             onSelectedPositionChanged = viewModel::updateSelectedPosition,
         )
 
+        selectorView.rectangleSelectionEnabled = true
+
+selectorView.onSelectedAreaChanged = { area ->
+    viewModel.updateSelectedArea(area)
+}
+
         orientation = displayConfigManager.displayConfig.orientation
         overlayView = OverlayColorCaptureZoomViewBinding.inflate(LayoutInflater.from(context), orientation).apply {
             root.addView(selectorView)
