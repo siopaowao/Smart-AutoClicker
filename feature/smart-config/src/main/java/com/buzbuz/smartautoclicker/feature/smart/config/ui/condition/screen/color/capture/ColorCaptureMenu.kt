@@ -24,6 +24,7 @@ import android.view.ViewGroup
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import android.graphics.Rect
 
 import com.buzbuz.smartautoclicker.core.common.overlays.base.viewModels
 import com.buzbuz.smartautoclicker.core.common.overlays.menu.OverlayMenu
@@ -40,7 +41,7 @@ import kotlin.getValue
 
 
 class ColorCaptureMenu (
-    private val onColorSelected: (position: PointF, colorInt: Int) -> Unit,
+    private val onColorSelected: (area: Rect, colorInt: Int) -> Unit,
 ) : OverlayMenu(theme = R.style.ScenarioConfigTheme, recreateOverlayViewOnRotation = true) {
 
     override fun tutorialMonitoringTag(): String = MonitoredOverlayType.COLOR_CAPTURE_MENU.name
@@ -105,11 +106,15 @@ class ColorCaptureMenu (
             R.id.btn_confirm -> when (captureStep) {
                 ColorCaptureMenuStep.SCREENSHOT_SELECTION -> viewModel.captureScreen()
                 ColorCaptureMenuStep.PIXEL_SELECTION -> {
-                    viewModel.getPixelSelection()?.let { (position, color) ->
-                        back()
-                        onColorSelected(position, color)
-                    }
-                }
+    viewModel.getPixelSelection()?.let { (position, color) ->
+        val x = position.x.toInt()
+        val y = position.y.toInt()
+        val area = Rect(x, y, x + 1, y + 1)
+
+        back()
+        onColorSelected(area, color)
+    }
+}
                 ColorCaptureMenuStep.CAPTURING -> return
             }
 
