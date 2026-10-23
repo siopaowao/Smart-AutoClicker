@@ -1,23 +1,26 @@
+
 /*
  * Copyright (C) 2026 Kevin Buzeau
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU General Public License as published
+ * by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 package com.buzbuz.smartautoclicker.feature.smart.config.ui.condition.screen.color.capture
 
 import android.graphics.Bitmap
 import android.graphics.PointF
+import android.graphics.Rect
 import androidx.annotation.ColorInt
 import androidx.core.graphics.get
 import androidx.lifecycle.ViewModel
@@ -55,29 +58,54 @@ class ColorCaptureViewModel @Inject constructor(
 
     private var screenshotJob: Job? = null
 
-    private val _uiState: MutableStateFlow<ColorCaptureUiState> = MutableStateFlow(screenshotSelectionState())
+    // The selected rectangle, in selector-view coordinates.
+    private var selectedArea: Rect? = null
+
+    private val _uiState: MutableStateFlow<ColorCaptureUiState> =
+        MutableStateFlow(screenshotSelectionState())
+
     val uiState: StateFlow<ColorCaptureUiState> = _uiState
 
-
     fun getPixelSelection(): Pair<PointF, Int>? {
-        val pixelSelectionState = uiState.value.pixelSelectionUiState ?: return null
-        val selectedPosition = pixelSelectionState.selectedPosition ?: return null
-        val selectedColor = pixelSelectionState.selectedColor ?: return null
+        val pixelSelectionState =
+            uiState.value.pixelSelectionUiState ?: return null
+
+        val selectedPosition =
+            pixelSelectionState.selectedPosition ?: return null
+
+        val selectedColor =
+            pixelSelectionState.selectedColor ?: return null
 
         return selectedPosition to selectedColor
     }
 
+    fun updateSelectedArea(area: Rect) {
+        if (area.width() <= 0 || area.height() <= 0) return
+        selectedArea = Rect(area)
+    }
+
+    fun getSelectedArea(): Rect? =
+        selectedArea?.let { Rect(it) }
+
     fun captureScreen() {
+        // Reset any previous rectangle when taking a new screenshot.
+        selectedArea = null
         _uiState.update { capturingState() }
 
         screenshotJob = viewModelScope.launch(ioDispatcher) {
-            delay(200L.milliseconds) // Wait a bit to ensure menu is effectively invisible and a new screen frame is available
+            delay(200L.milliseconds)
 
             val screenshot = displayRecorder.takeScreenshot()
+
             _uiState.update {
-                if (screenshot == null) capturingState() else {
+                if (screenshot == null) {
+                    capturingState()
+                } else {
                     withContext(mainDispatcher) {
-                        monitoredViewsManager.notifyClick(MonitoredViewType.SCREEN_CONDITION_CAPTURE_MENU_BUTTON_CAPTURE)
+                        monitoredViewsManager.notifyClick(
+                            MonitoredViewType
+                                .SCREEN_CONDITION_CAPTURE_MENU_BUTTON_CAPTURE
+                        )
                     }
                     pixelSelectionState(screenshot)
                 }
@@ -86,22 +114,30 @@ class ColorCaptureViewModel @Inject constructor(
     }
 
     fun cancelCapture() {
+        selectedArea = null
         _uiState.update { screenshotSelectionState() }
     }
 
     fun updateSelectedPosition(position: PointF?) {
         _uiState.update { currentState ->
-            val currentPixelSelectionState = currentState.pixelSelectionUiState
-            if (currentState.captureStep != ColorCaptureMenuStep.PIXEL_SELECTION || currentPixelSelectionState == null)
+            val pixelState = currentState.pixelSelectionUiState
+
+            if (
+                currentState.captureStep != ColorCaptureMenuStep.PIXEL_SELECTION ||
+                pixelState == null
+            ) {
                 currentState
-            else {
-                val selectorColor = currentState.pixelSelectionUiState.screenshot.getPixelColor(position)
+            } else {
+                val selectorColor =
+                    pixelState.screenshot.getPixelColor(position)
+
                 currentState.copy(
                     topButtonEnabled = position != null,
-                    pixelSelectionUiState = currentState.pixelSelectionUiState.copy(
+                    pixelSelectionUiState = pixelState.copy(
                         selectedPosition = position,
                         selectedColor = selectorColor,
-                        selectedColorDisplayText = selectorColor.toRgbaHexString(),
+                        selectedColorDisplayText =
+                            selectorColor.toRgbaHexString(),
                     )
                 )
             }
@@ -126,9 +162,14 @@ class ColorCaptureViewModel @Inject constructor(
             showHideButtonEnabled = false,
         )
 
-    private fun pixelSelectionState(screenshot: Bitmap): ColorCaptureUiState {
+    private fun pixelSelectionState(
+        screenshot: Bitmap
+    ): ColorCaptureUiState {
         val displaySize = displayConfigManager.displayConfig.sizePx
-        val position = PointF(displaySize.x / 2f, displaySize.y / 2f)
+        val position = PointF(
+            displaySize.x / 2f,
+            displaySize.y / 2f
+        )
         val selectorColor = screenshot.getPixelColor(position)
 
         return ColorCaptureUiState(
@@ -141,18 +182,21 @@ class ColorCaptureViewModel @Inject constructor(
                 screenshot = screenshot,
                 selectedPosition = position,
                 selectedColor = selectorColor,
-                selectedColorDisplayText = selectorColor.toRgbaHexString(),
+                selectedColorDisplayText =
+                    selectorColor.toRgbaHexString(),
             ),
         )
     }
 
-    /** @return the color of the pixel in the screenshot as a [ColorInt]. */
+    /** Returns the screenshot pixel color at the selected position. */
     @ColorInt
     private fun Bitmap.getPixelColor(position: PointF?): Int =
-        if (position == null) 0
-        else get(
-            position.x.toInt().coerceIn(0, width - 1),
-            position.y.toInt().coerceIn(0, height - 1),
-        )
+        if (position == null) {
+            0
+        } else {
+            get(
+                position.x.toInt().coerceIn(0, width - 1),
+                position.y.toInt().coerceIn(0, height - 1),
+            )
+        }
 }
-
