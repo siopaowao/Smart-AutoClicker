@@ -259,15 +259,15 @@ class ColorConditionDialog(
     }
 
     private fun showPixelColorPickerOverlay() {
-        overlayManager.navigateTo(
-            context = context,
-            newOverlay = ColorCaptureMenu { position, selectedColor ->
-                viewModel.setColor(selectedColor)
-                viewModel.setPosition(position)
-            },
-            hideCurrent = true,
-        )
-    }
+    overlayManager.navigateTo(
+        context = context,
+        newOverlay = ColorCaptureMenu { area, selectedColor ->
+            viewModel.setColor(selectedColor)
+            viewModel.setDetectionArea(area)
+        },
+        hideCurrent = true,
+    )
+}
 }
 
 private const val TAG = "ColorConditionDialog"
