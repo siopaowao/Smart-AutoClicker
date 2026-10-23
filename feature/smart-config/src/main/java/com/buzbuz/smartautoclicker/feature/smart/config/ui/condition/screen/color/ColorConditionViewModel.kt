@@ -137,5 +137,6 @@ fun setDetectionArea(area: Rect) {
             blueValue = color.getBlueValue(),
             shouldBeDetectedChecked = shouldBeDetected,
             detectionThreshold = threshold,
+            detectionArea = Rect(detectionArea),
         )
 }
