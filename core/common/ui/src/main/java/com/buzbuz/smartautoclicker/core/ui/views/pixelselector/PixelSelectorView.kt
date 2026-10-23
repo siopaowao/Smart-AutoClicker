@@ -26,9 +26,10 @@ import android.graphics.RectF
 import android.view.MotionEvent
 import androidx.core.content.res.use
 import androidx.core.graphics.drawable.toDrawable
-import android.graphics.Rect
-import android.graphics.Paint
 import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Rect
+import android.view.MotionEvent
 
 import com.buzbuz.smartautoclicker.core.display.config.DisplayConfigManager
 import com.buzbuz.smartautoclicker.core.ui.R
