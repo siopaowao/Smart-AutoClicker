@@ -18,6 +18,7 @@ package com.buzbuz.smartautoclicker.feature.smart.config.ui.condition.screen.col
 
 import android.graphics.PointF
 import androidx.annotation.ColorInt
+import android.graphics.Rect
 
 data class ColorConditionUiState(
     val canBeSaved: Boolean,
@@ -31,4 +32,5 @@ data class ColorConditionUiState(
     val blueValue: Int,
     val shouldBeDetectedChecked: Boolean,
     val detectionThreshold: Int,
+    val detectionArea: Rect,
 )
