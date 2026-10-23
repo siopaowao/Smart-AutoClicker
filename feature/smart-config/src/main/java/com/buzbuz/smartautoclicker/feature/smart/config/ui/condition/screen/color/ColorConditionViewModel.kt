@@ -84,13 +84,17 @@ class ColorConditionViewModel  @Inject constructor(
         updateEditedCondition { it.copy(color = colorInt) }
     }
 
-    fun setPosition(position: PointF) {
-        updateEditedCondition {
-            val x = position.x.toInt()
-            val y = position.y.toInt()
-            it.copy(detectionArea = Rect(x, y, x + 1, y + 1))
-        }
+    
+fun setDetectionArea(area: Rect) {
+    if (area.width() <= 0 || area.height() <= 0) return
+
+    updateEditedCondition { condition ->
+        condition.copy(
+            detectionArea = Rect(area)
+        )
     }
+}
+
 
     fun toggleShouldBeDetected() {
         updateEditedCondition { oldCondition ->
